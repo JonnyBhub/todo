@@ -106,6 +106,14 @@ pub fn add_task(&mut self, description: String, due_date: Option<String>) -> Res
 }
 ```
 
+```bash
+# Run formatting
+cargo fmt
+
+# Run clippy for advice
+cargo clippy
+```
+
 ## Testing
 
 ### Running Tests
