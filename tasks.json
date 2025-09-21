@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": null,
+    "completed_at": null
+  },
+  {
+    "id": 2,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-10-02",
+    "completed_at": null
+  },
+  {
+    "id": 3,
+    "description": "Add a ui option to the lists",
+    "completed": false,
+    "due_date": "2025-10-10",
+    "completed_at": null
+  },
+  {
+    "id": 4,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-22",
+    "completed_at": null
+  },
+  {
+    "id": 5,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-22",
+    "completed_at": null
+  },
+  {
+    "id": 6,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-22",
+    "completed_at": null
+  },
+  {
+    "id": 7,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-22",
+    "completed_at": null
+  },
+  {
+    "id": 8,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-22",
+    "completed_at": null
+  },
+  {
+    "id": 9,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-22",
+    "completed_at": null
+  },
+  {
+    "id": 10,
+    "description": "learn rust",
+    "completed": false,
+    "due_date": "2025-09-19",
+    "completed_at": null
+  }
+]
