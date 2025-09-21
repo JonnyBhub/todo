@@ -125,7 +125,7 @@ impl TodoApp {
                     task.due_date = Some(due);
                 }
                 let edited_description = task.description.clone();
-                let edited_due_date = task.due_date.clone();
+                let edited_due_date = task.due_date;
                 self.save_tasks();
                 println!(
                     "Edited task #{}: {}. Due - {}",
