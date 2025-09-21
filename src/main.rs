@@ -146,7 +146,7 @@ impl TodoApp {
                 .iter()
                 .filter(|task| {
                     !task.completed
-                        && task.due_date.map_or(false, |due| {
+                        && task.due_date.is_some_and(|due| {
                             let days_until_due = (due - today).num_days();
                             days_until_due <= 3
                         })
@@ -267,16 +267,13 @@ impl TodoApp {
     }
 
     fn load_tasks(&mut self) {
-        match fs::read_to_string(&self.file_path) {
-            Ok(contents) => match serde_json::from_str::<Vec<Task>>(&contents) {
-                Ok(tasks) => {
-                    self.tasks = tasks;
-                    self.next_id = self.tasks.iter().map(|task| task.id).max().unwrap_or(0) + 1;
-                }
-                Err(_) => println!("Warning: could not parse tasks file, starting fresh"),
-            },
-            Err(_) => {}
-        }
+        if let Ok(contents) = fs::read_to_string(&self.file_path) { match serde_json::from_str::<Vec<Task>>(&contents) {
+            Ok(tasks) => {
+                self.tasks = tasks;
+                self.next_id = self.tasks.iter().map(|task| task.id).max().unwrap_or(0) + 1;
+            }
+            Err(_) => println!("Warning: could not parse tasks file, starting fresh"),
+        } }
     }
     fn save_tasks(&self) {
         match serde_json::to_string_pretty(&self.tasks) {
