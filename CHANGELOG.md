@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned Features
 
 - Interactive mode for better user experience
+  - https://github.com/ratatui/ratatui/blob/main/examples/apps/todo-list/src/main.rs
 - Task categories and tags
 - Priority levels for tasks
 - Task dependencies
