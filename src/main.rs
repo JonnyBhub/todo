@@ -1,7 +1,7 @@
-use std::fs;
-use serde::{Deserialize, Serialize};
-use clap::{Parser, Subcommand};
 use chrono::{DateTime, Local, NaiveDate};
+use clap::{Parser, Subcommand};
+use serde::{Deserialize, Serialize};
+use std::fs;
 
 #[derive(Parser)]
 #[command(name = "todo")]
@@ -14,43 +14,43 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Add a new task
-    Add { 
+    Add {
         /// Task description
-        description: String, 
+        description: String,
         /// Optional due date in YYYY-MM-DD format
         #[arg(short, long)]
-        due: Option<String> },
+        due: Option<String>,
+    },
     /// Edit an existing task by ID, you can change the description and/or due date
-    Edit { 
+    Edit {
         /// Task ID
         id: u32,
         /// New task description
-        description: Option<String>, 
+        description: Option<String>,
         /// Optional new due date in YYYY-MM-DD format
         #[arg(short, long)]
-        due: Option<String> 
+        due: Option<String>,
     },
     /// List all tasks
-    List { 
+    List {
         /// Show only tasks due soon ( within 3 days)
         #[arg(short, long)]
-        urgent: bool
-
-
+        urgent: bool,
     },
     /// Search tasks by keyword
     Search {
         /// Keyword to search for in task descriptions
-        keyword: String
+        keyword: String,
     },
     /// Mark a task as complete
-    Complete { 
+    Complete {
         /// Task ID
-        id: u32 },
+        id: u32,
+    },
     /// Mark multiple tasks as complete, provide a list of IDs
-    CompleteTasks{ 
+    CompleteTasks {
         /// List of Task IDs to complete
-        ids: Vec<u32> 
+        ids: Vec<u32>,
     },
     /// Remove a task
     Remove { id: u32 },
@@ -58,7 +58,6 @@ enum Commands {
     /// Use with caution!
     /// This will delete all tasks permanently.
     RemoveAll,
-
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,7 +86,8 @@ impl TodoApp {
         app
     }
     fn add_task(&mut self, description: String, due_date_str: Option<String>) {
-        let due_date = due_date_str.and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok());
+        let due_date =
+            due_date_str.and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok());
 
         if due_date.is_some() && due_date.is_none() {
             println!("Warning: Invalid due date format. Use YYYY-MM-DD.");
@@ -99,29 +99,40 @@ impl TodoApp {
             description,
             completed: false,
             due_date,
-            completed_at: None
+            completed_at: None,
         };
 
         self.tasks.push(task);
         self.next_id += 1;
         self.save_tasks();
 
-        println!("Added task #{}: {}", self.next_id - 1, self.tasks.last().unwrap().description);
+        println!(
+            "Added task #{}: {}",
+            self.next_id - 1,
+            self.tasks.last().unwrap().description
+        );
     }
 
-    fn edit_task(&mut self, id:u32, new_desc: Option<String>, due_date: Option<String>){
+    fn edit_task(&mut self, id: u32, new_desc: Option<String>, due_date: Option<String>) {
         match self.tasks.iter_mut().find(|task| task.id == id) {
             Some(task) => {
                 if let Some(description) = new_desc {
                     task.description = description;
                 }
-                if let Some(due) = due_date.and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok()){
+                if let Some(due) = due_date
+                    .and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok())
+                {
                     task.due_date = Some(due);
                 }
                 let edited_description = task.description.clone();
                 let edited_due_date = task.due_date.clone();
                 self.save_tasks();
-                println!("Edited task #{}: {}. Due - {}", id, edited_description, edited_due_date.map_or("No due date".to_string(), |d| d.to_string()));
+                println!(
+                    "Edited task #{}: {}. Due - {}",
+                    id,
+                    edited_description,
+                    edited_due_date.map_or("No due date".to_string(), |d| d.to_string())
+                );
             }
             None => println!("Task #{} not found", id),
         }
@@ -131,12 +142,16 @@ impl TodoApp {
         let mut tasks_to_show: Vec<&Task> = if urgent_only {
             let today = Local::now().date_naive();
 
-            self.tasks.iter().filter(|task| {
-                !task.completed && task.due_date.map_or(false, |due| {
-                    let days_until_due = (due - today).num_days();
-                    days_until_due <= 3
+            self.tasks
+                .iter()
+                .filter(|task| {
+                    !task.completed
+                        && task.due_date.map_or(false, |due| {
+                            let days_until_due = (due - today).num_days();
+                            days_until_due <= 3
+                        })
                 })
-            }).collect()
+                .collect()
         } else {
             self.tasks.iter().collect()
         };
@@ -153,7 +168,7 @@ impl TodoApp {
         tasks_to_show.sort_by(|a, b| {
             let today = Local::now().date_naive();
 
-            match(a.due_date, b.due_date) {
+            match (a.due_date, b.due_date) {
                 (Some(ad), Some(bd)) => {
                     let a_days = (ad - today).num_days();
                     let b_days = (bd - today).num_days();
@@ -165,11 +180,15 @@ impl TodoApp {
             }
         });
 
-        let title = if urgent_only { "Urgent tasks:" } else { "Your tasks:" };
+        let title = if urgent_only {
+            "Urgent tasks:"
+        } else {
+            "Your tasks:"
+        };
         println!("{}", title);
-        
+
         let today = Local::now().date_naive();
-        
+
         for task in tasks_to_show {
             let status = if task.completed { "✓" } else { " " };
             let urgency_indicator = match task.due_date {
@@ -190,13 +209,18 @@ impl TodoApp {
                 None => String::new(),
             };
 
-            println!("[{}] {}: {}{}", status, task.id, task.description, urgency_indicator);
+            println!(
+                "[{}] {}: {}{}",
+                status, task.id, task.description, urgency_indicator
+            );
         }
     }
 
     fn search_tasks(&self, keyword: &str) {
         let keyword_lower = keyword.to_lowercase();
-        let matching_tasks: Vec<&Task> = self.tasks.iter()
+        let matching_tasks: Vec<&Task> = self
+            .tasks
+            .iter()
             .filter(|task| task.description.to_lowercase().contains(&keyword_lower))
             .collect();
 
@@ -208,7 +232,14 @@ impl TodoApp {
         println!("Tasks matching '{}':", keyword);
         for task in matching_tasks {
             let status = if task.completed { "✓" } else { " " };
-            println!("[{}] {}: {}. Due - {}", status, task.id, task.description, task.due_date.map_or("No due date".to_string(), |d| d.to_string()));
+            println!(
+                "[{}] {}: {}. Due - {}",
+                status,
+                task.id,
+                task.description,
+                task.due_date
+                    .map_or("No due date".to_string(), |d| d.to_string())
+            );
         }
     }
     fn complete_task(&mut self, id: u32) {
@@ -226,7 +257,7 @@ impl TodoApp {
     fn remove_task(&mut self, id: u32) {
         let initial_len = self.tasks.len();
         self.tasks.retain(|task| task.id != id);
-        
+
         if self.tasks.len() < initial_len {
             self.save_tasks();
             println!("Removed task #{}", id);
@@ -237,26 +268,21 @@ impl TodoApp {
 
     fn load_tasks(&mut self) {
         match fs::read_to_string(&self.file_path) {
-            Ok(contents) => {
-                match serde_json::from_str::<Vec<Task>>(&contents) {
-                    Ok(tasks) => {
-                        self.tasks = tasks;
-                        self.next_id = self.tasks.iter()
-                            .map(|task| task.id)
-                            .max()
-                            .unwrap_or(0) + 1;
-                    }
-                    Err(_) => println!("Warning: could not parse tasks file, starting fresh")
+            Ok(contents) => match serde_json::from_str::<Vec<Task>>(&contents) {
+                Ok(tasks) => {
+                    self.tasks = tasks;
+                    self.next_id = self.tasks.iter().map(|task| task.id).max().unwrap_or(0) + 1;
                 }
-            }
+                Err(_) => println!("Warning: could not parse tasks file, starting fresh"),
+            },
             Err(_) => {}
         }
     }
     fn save_tasks(&self) {
-        match serde_json::to_string_pretty(&self.tasks){
+        match serde_json::to_string_pretty(&self.tasks) {
             Ok(json) => {
-                if let Err(e) = fs::write(&self.file_path, json){
-                    eprintln!("Warning: Could not save tasks: {}" , e);
+                if let Err(e) = fs::write(&self.file_path, json) {
+                    eprintln!("Warning: Could not save tasks: {}", e);
                 }
             }
             Err(e) => eprintln!("Warning: Could not serialize tasks: {}", e),
@@ -276,10 +302,14 @@ fn main() {
     let mut app = TodoApp::new();
 
     match cli.command {
-        Commands::Add { description , due } => {
+        Commands::Add { description, due } => {
             app.add_task(description, due);
         }
-        Commands::Edit { id, description, due } => {
+        Commands::Edit {
+            id,
+            description,
+            due,
+        } => {
             app.edit_task(id, description, due);
         }
         Commands::List { urgent } => {
@@ -301,7 +331,6 @@ fn main() {
         }
         Commands::RemoveAll => {
             app.remove_all_tasks();
-        }   
-
+        }
     }
 }
