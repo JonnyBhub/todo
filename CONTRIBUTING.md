@@ -15,12 +15,12 @@ Thank you for your interest in contributing to Todo CLI! This document provides 
 1. Fork the repository on GitHub
 2. Clone your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/todo.git
+   git clone https://github.com/JonnyBhub/todo.git
    cd todo
    ```
 3. Add the upstream repository as a remote:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_OWNER/todo.git
+   git remote add upstream https://github.com/JonnyBhub/todo.git
    ```
 4. Build the project to ensure everything works:
    ```bash
