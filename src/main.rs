@@ -1,13 +1,26 @@
 use chrono::{DateTime, Local, NaiveDate};
 use clap::{Parser, Subcommand};
+use clap::builder::Styles;
+use clap::builder::styling::{AnsiColor, Effects};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use dirs;
 
+const STYLES: Styles = Styles::styled()
+    .header(AnsiColor::Green.on_default().bold())
+    .error(AnsiColor::Red.on_default().bold())
+    .usage(AnsiColor::Green.on_default().bold())
+    .literal(AnsiColor::Blue.on_default().bold())
+    .placeholder(AnsiColor::Cyan.on_default());
+
+
 #[derive(Parser)]
-#[command(name = "todo")]
-#[command(about = "A simple CLI todo manager")]
+#[command(name = env!("CARGO_PKG_NAME"), author = env!("CARGO_PKG_AUTHORS"))]
+#[command(about = "A simple CLI todo manager - add, edit, list, search, complete, and remove tasks", long_about = None)]
+#[command(version = env!("CARGO_PKG_VERSION"))]
+#[command(propagate_version = true)]
+#[command(styles = STYLES)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -16,8 +29,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Add a new task
+    #[command(visible_aliases = ["+", "a"])]
     Add {
         /// Task description
+        #[arg(required = true)]
         description: String,
         /// Optional due date in YYYY-MM-DD format
         #[arg(short, long)]
@@ -26,6 +41,7 @@ enum Commands {
     /// Edit an existing task by ID, you can change the description and/or due date
     Edit {
         /// Task ID
+        #[arg(required = true)]
         id: u32,
         /// New task description
         description: Option<String>,
@@ -33,7 +49,7 @@ enum Commands {
         #[arg(short, long)]
         due: Option<String>,
     },
-    /// List all tasks
+    /// List all tasks use --urgent, -u to filter for tasks due within 3 days
     List {
         /// Show only tasks due soon ( within 3 days)
         #[arg(short, long)]
@@ -55,6 +71,7 @@ enum Commands {
         ids: Vec<u32>,
     },
     /// Remove a task
+    #[command(visible_aliases = ["-","rm","del"])]
     Remove { id: u32 },
     /// Remove all tasks
     /// Use with caution!
@@ -115,6 +132,7 @@ impl TodoApp {
             }
         }
     }
+
     fn verify_file_integrity(&self) -> bool {
         if let Ok(contents) = fs::read_to_string(&self.file_path) {
             if let Ok(tasks) = serde_json::from_str::<Vec<Task>>(&contents){
@@ -122,6 +140,21 @@ impl TodoApp {
             }
         }
         false
+    }
+
+    fn set_file_permissions(&self) {
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            if let Ok(file) = fs::File::open(&self.file_path) {
+                if let Ok(metadata) = file.metadata() {
+                    let mut perms = metadata.permissions();
+                    perms.set_mode(0o600); // Read/write for owner
+                    let _ = fs::set_permissions(&self.file_path, perms);
+                }
+            }
+
+        }
     }
 
     fn add_task(&mut self, description: String, due_date_str: Option<String>) {
@@ -307,7 +340,7 @@ impl TodoApp {
 
     fn load_tasks(&mut self) {
         if let Ok(contents) = fs::read_to_string(&self.file_path) { 
-            if !self.verify_file_integrity(){
+            if !self.verify_file_integrity() {
                 println!("Warning: Data file appears to be corrupted or tampered with");
                 return;
             }
@@ -319,12 +352,15 @@ impl TodoApp {
             Err(_) => println!("Warning: could not parse tasks file, starting fresh"),
         } }
     }
-    
+
     fn save_tasks(&self) {
         match serde_json::to_string_pretty(&self.tasks) {
             Ok(json) => {
                 if let Err(e) = fs::write(&self.file_path, json) {
                     eprintln!("Warning: Could not save tasks: {}", e);
+                } else {
+                    // Sets the permissions after writing
+                    self.set_file_permissions();
                 }
             }
             Err(e) => eprintln!("Warning: Could not serialize tasks: {}", e),
