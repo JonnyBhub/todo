@@ -4,3 +4,13 @@
 // - CLI types: src/cli.rs
 // - Storage: src/storage.rs
 // - App: src/app.rs
+
+use clap::ValueEnum;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ValueEnum)]
+pub enum Priority {
+    Low,
+    Medium,
+    High,
+}

@@ -3,6 +3,8 @@ use clap::builder::Styles;
 use clap::builder::styling::AnsiColor;
 use clap_complete::{generate, Shell};
 use std::io;
+use crate::types::Priority;
+
 
 const STYLES: Styles = Styles::styled()
     .header(AnsiColor::Green.on_default().bold().underline())
@@ -23,14 +25,24 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Add a new task (shortcuts: +, a)
+    /// Add a new task
     #[command(visible_aliases = ["+", "a"])]
     Add {
         /// Task description
         description: String,
         /// Optional due date in YYYY-MM-DD format
+        
+        #[arg(short,long, value_enum)]
+        priority: Option<Priority>,
+
+        /// Optional tags, comma-separated
+        #[arg(short, long)]
+        tags: Option<String>,
+
         #[arg(short, long)]
         due: Option<String>,
+
+
     },
     /// Edit an existing task by ID, you can change the description and/or due date
     Edit {
@@ -63,7 +75,7 @@ pub enum Commands {
         /// List of Task IDs to complete
         ids: Vec<u32>,
     },
-    /// Remove a task (shortcuts: -, rm, del)
+    /// Remove a task by ID
     #[command(visible_aliases = ["-", "rm", "del"])]
     Remove { id: u32 },
     /// Remove all tasks

@@ -1,6 +1,7 @@
-use crate::task::Task;
+use crate::{task::Task, types::Priority};
 use crate::storage::Storage;
 use chrono::{Local, NaiveDate};
+
 
 pub struct TodoApp {
     tasks: Vec<Task>,
@@ -24,7 +25,7 @@ impl TodoApp {
         }
     }
 
-    pub fn add_task(&mut self, description: String, due_date_str: Option<String>) {
+    pub fn add_task(&mut self, description: String, priority_input:Option<Priority>, tag_list:Option<String>, due_date_str: Option<String>) {        
         let due_date = due_date_str.clone().and_then(|date_str| 
             NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok()
         );
@@ -34,7 +35,23 @@ impl TodoApp {
             return;
         }
 
-        let task = Task::new(self.next_id, description, due_date);
+        let mut priority = None;
+
+        if let Some(priority_value) = priority_input {
+            priority = Some(priority_value);
+        }
+
+        let mut tags = None;
+
+        if let Some(tag_string) = tag_list {
+            tags = Some(tag_string
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect());
+        }
+
+        let task = Task::new(self.next_id, description, priority, tags, due_date);
         self.tasks.push(task);
         self.next_id += 1;
         self.storage.save_tasks(&self.tasks);
@@ -97,7 +114,7 @@ impl TodoApp {
         });
 
         let title = if urgent_only { "Urgent tasks:" } else { "Your tasks:" };
-        println!("{}", title);
+        println!("{}\n", title);
         
         let today = Local::now().date_naive();
         
@@ -121,7 +138,24 @@ impl TodoApp {
                 None => String::new(),
             };
 
-            println!("[{}] {}: {}{}", status, task.id, task.description, urgency_indicator);
+
+            // format priority
+            let priority_display = match &task.priority {
+                Some(p) => match p {
+                    Priority::High => "🔴 HIGH".to_string(),
+                    Priority::Medium => "🟡 MED".to_string(),
+                    Priority::Low => "🟢 LOW".to_string(),
+                },
+                None => "None".to_string(),
+            };
+
+            // format tags (unwrap Option<Vec<String>> into a human string)
+            let tags_display = match &task.tags {
+                Some(tags) if !tags.is_empty() => tags.join(", "),
+                _ => "No tags".to_string(),
+            };
+
+            println!("[{}] {}: {}{}.\n  Priority: {}\n  Tags: {}\n", status, task.id, task.description, urgency_indicator, priority_display, tags_display);
         }
     }
 
