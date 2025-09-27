@@ -42,7 +42,6 @@ pub enum Commands {
         #[arg(short, long)]
         due: Option<String>,
 
-
     },
     /// Edit an existing task by ID, you can change the description and/or due date
     Edit {
@@ -50,6 +49,15 @@ pub enum Commands {
         id: u32,
         /// New task description
         description: Option<String>,
+        /// Task priority (high, medium, low)
+        #[arg(short, long, value_enum)]
+        priority: Option<crate::types::Priority>,
+        /// Replace task tags (comma-separated)
+        #[arg(short = 't', long = "tags")]
+        tag: Option<String>,
+        /// Append tags to existing tags (comma-separated)
+        #[arg(short = 'A', long = "add-tags")]
+        add_tags: Option<String>,
         /// Optional new due date in YYYY-MM-DD format
         #[arg(short, long)]
         due: Option<String>,

@@ -42,13 +42,12 @@ impl TodoApp {
         }
 
         let mut tags = None;
-
         if let Some(tag_string) = tag_list {
             tags = Some(tag_string
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
-                .collect());
+                .collect::<Vec<String>>());
         }
 
         let task = Task::new(self.next_id, description, priority, tags, due_date);
@@ -59,24 +58,80 @@ impl TodoApp {
         println!("Added task #{}: {}", self.next_id - 1, self.tasks.last().unwrap().description);
     }
 
-    pub fn edit_task(&mut self, id: u32, new_desc: Option<String>, due_date: Option<String>) {
+    pub fn edit_task(&mut self, id: u32, new_desc: Option<String>, priority_input: Option<Priority>, tag_list_replace: Option<String>, tag_list_add: Option<String>, due_date: Option<String>) {
         match self.tasks.iter_mut().find(|task| task.id == id) {
             Some(task) => {
-                if let Some(description) = new_desc {
-                    task.description = description;
-                }
-                if let Some(due) = due_date.and_then(|date_str| 
-                    NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok()
-                ) {
-                    task.due_date = Some(due);
-                }
-                let edited_description = task.description.clone();
-                let edited_due_date = task.due_date;
+                // perform updates while we have the mutable borrow and collect owned display values,
+                // then the borrow will end at the end of this inner block so we can call save_tasks().
+                let (desc_owned, due_owned, priority_owned, tags_owned) = {
+                    if let Some(description) = new_desc {
+                        task.description = description;
+                    }
+
+                    if let Some(priority_value) = priority_input {
+                        task.priority = Some(priority_value);
+                    }
+
+                    // Replace tags if provided
+                    if let Some(tag_string) = tag_list_replace {
+                        let parsed: Vec<String> = tag_string
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                        task.tags = if parsed.is_empty() { None } else { Some(parsed) };
+                    }
+
+                    // Append tags if provided
+                    if let Some(add_string) = tag_list_add {
+                        let parsed_to_add: Vec<String> = add_string
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                        if !parsed_to_add.is_empty() {
+                            match &mut task.tags {
+                                Some(existing) => {
+                                    existing.extend(parsed_to_add.into_iter());
+                                    // optional: dedupe
+                                    existing.sort();
+                                    existing.dedup();
+                                }
+                                None => {
+                                    task.tags = Some(parsed_to_add);
+                                }
+                            }
+                        }
+                    }
+
+                    if let Some(due) = due_date.and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok()) {
+                        task.due_date = Some(due);
+                    }
+
+                    // take owned copies for printing after we drop the mutable borrow
+                    let desc_owned = task.description.clone();
+                    let due_owned = task.due_date.map(|d| d.to_string());
+                    let priority_owned = match &task.priority {
+                        Some(p) => match p {
+                            Priority::High => "🔴 HIGH".to_string(),
+                            Priority::Medium => "🟡 MED".to_string(),
+                            Priority::Low => "🟢 LOW".to_string(),
+                        },
+                        None => "None".to_string(),
+                    };
+                    let tags_owned = task.tags.as_ref().map(|v| v.join(", ")).unwrap_or_else(|| "No tags".to_string());
+
+                    (desc_owned, due_owned, priority_owned, tags_owned)
+                }; // mutable borrow of `task` ends here
+
                 self.storage.save_tasks(&self.tasks);
-                println!("Edited task #{}: {}. Due - {}", 
+
+                println!("Edited task #{}: {}\n  Due: {}\n  Priority: {}\n  Tags: {}", 
                     id, 
-                    edited_description, 
-                    edited_due_date.map_or("No due date".to_string(), |d| d.to_string())
+                    desc_owned, 
+                    due_owned.unwrap_or_else(|| "No due date".to_string()),
+                    priority_owned,
+                    tags_owned
                 );
             }
             None => println!("Task #{} not found", id),

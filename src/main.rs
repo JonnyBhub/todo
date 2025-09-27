@@ -16,8 +16,8 @@ fn main() {
         Commands::Add { description, priority, tags, due } => {
             app.add_task(description, priority, tags, due);
         }
-        Commands::Edit { id, description, due } => {
-            app.edit_task(id, description, due);
+        Commands::Edit { id, description, priority, tag, add_tags, due } => {
+            app.edit_task(id, description, priority, tag, add_tags, due);
         }
         Commands::List { urgent } => {
             app.list_tasks(urgent);
