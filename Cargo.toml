@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# clap added for polished CLI tools
 clap = { version = "4.5.48", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# chrono added for better date time management
 chrono = { version = "0.4", features = ["serde"] }
+# dirs added for easy directory determination for cross platform
+dirs = "5.0" 

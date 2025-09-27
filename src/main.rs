@@ -2,6 +2,8 @@ use chrono::{DateTime, Local, NaiveDate};
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::PathBuf;
+use dirs;
 
 #[derive(Parser)]
 #[command(name = "todo")]
@@ -80,11 +82,48 @@ impl TodoApp {
         let mut app = TodoApp {
             tasks: Vec::new(),
             next_id: 1,
-            file_path: "tasks.json".to_string(),
+            file_path: Self::get_data_file_path(),
         };
+        app.ensure_data_directory();
         app.load_tasks();
         app
     }
+
+    fn get_data_file_path() -> String {
+        let mut path = if let Some(data_dir) = dirs::data_dir() {
+            data_dir
+        }
+        else if let Some(home_dir) = dirs::home_dir() {
+            home_dir
+        }
+        else {
+            PathBuf::from(".")
+        };
+
+        path.push("todo-cli");
+        path.push(".todo_data.json");
+        return path.to_string_lossy().to_string();
+    }
+
+
+    fn ensure_data_directory(&self) {
+        if let Some(parent) = PathBuf::from(&self.file_path).parent() {
+            if !parent.exists() {
+                if let Err(e) = fs::create_dir_all(parent) {
+                    eprintln!("Warning: Could not create data directory: {}", e);
+                }
+            }
+        }
+    }
+    fn verify_file_integrity(&self) -> bool {
+        if let Ok(contents) = fs::read_to_string(&self.file_path) {
+            if let Ok(tasks) = serde_json::from_str::<Vec<Task>>(&contents){
+                return tasks.iter().all(|task|!task.description.is_empty());
+            }
+        }
+        false
+    }
+
     fn add_task(&mut self, description: String, due_date_str: Option<String>) {
         let due_date =
             due_date_str.and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok());
@@ -267,7 +306,12 @@ impl TodoApp {
     }
 
     fn load_tasks(&mut self) {
-        if let Ok(contents) = fs::read_to_string(&self.file_path) { match serde_json::from_str::<Vec<Task>>(&contents) {
+        if let Ok(contents) = fs::read_to_string(&self.file_path) { 
+            if !self.verify_file_integrity(){
+                println!("Warning: Data file appears to be corrupted or tampered with");
+                return;
+            }
+            match serde_json::from_str::<Vec<Task>>(&contents) {
             Ok(tasks) => {
                 self.tasks = tasks;
                 self.next_id = self.tasks.iter().map(|task| task.id).max().unwrap_or(0) + 1;
@@ -275,6 +319,7 @@ impl TodoApp {
             Err(_) => println!("Warning: could not parse tasks file, starting fresh"),
         } }
     }
+    
     fn save_tasks(&self) {
         match serde_json::to_string_pretty(&self.tasks) {
             Ok(json) => {

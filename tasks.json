@@ -21,52 +21,24 @@
     "completed_at": null
   },
   {
-    "id": 4,
-    "description": "learn rust",
+    "id": 11,
+    "description": "Make it clear to the user that you can use ctrl + o to open file or folder in file-picker",
     "completed": false,
-    "due_date": "2025-09-22",
+    "due_date": null,
     "completed_at": null
   },
   {
-    "id": 5,
-    "description": "learn rust",
+    "id": 12,
+    "description": "have a unified location for the tasks so that you can access the tasks from anywhere on the pc and not just in the current directory",
     "completed": false,
-    "due_date": "2025-09-22",
+    "due_date": null,
     "completed_at": null
   },
   {
-    "id": 6,
-    "description": "learn rust",
+    "id": 13,
+    "description": "remove multiple tasks, similar to complete tasks",
     "completed": false,
-    "due_date": "2025-09-22",
-    "completed_at": null
-  },
-  {
-    "id": 7,
-    "description": "learn rust",
-    "completed": false,
-    "due_date": "2025-09-22",
-    "completed_at": null
-  },
-  {
-    "id": 8,
-    "description": "learn rust",
-    "completed": false,
-    "due_date": "2025-09-22",
-    "completed_at": null
-  },
-  {
-    "id": 9,
-    "description": "learn rust",
-    "completed": false,
-    "due_date": "2025-09-22",
-    "completed_at": null
-  },
-  {
-    "id": 10,
-    "description": "learn rust",
-    "completed": false,
-    "due_date": "2025-09-19",
+    "due_date": null,
     "completed_at": null
   }
 ]
