@@ -3,6 +3,7 @@ mod cli;
 mod storage;
 mod task;
 mod types;
+mod ui;
 
 use clap::Parser;
 use cli::{Cli, Commands};
@@ -41,6 +42,11 @@ fn main() {
         }
         Commands::Completions { shell } => {
             Cli::generate_completions(shell);
+        }
+        Commands::Ui => {
+            if let Err(e) = ui::run_ui() {
+                eprintln!("Error running UI: {}", e);
+            }
         }
     }
 }

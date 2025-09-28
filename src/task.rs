@@ -7,7 +7,8 @@ pub struct Task {
     pub id: u32,
     pub description: String,
     pub priority: Option<Priority>,
-    pub tags: Option<Vec<String>>,
+    #[serde(default)]
+    pub tags: Vec<String>,
     pub completed: bool,
     pub due_date: Option<NaiveDate>,
     pub completed_at: Option<DateTime<Local>>,
@@ -18,7 +19,7 @@ impl Task {
         id: u32, 
         description: String, 
         priority:Option<Priority>,
-        tags: Option<Vec<String>>,
+        tags: Vec<String>,
         due_date: Option<NaiveDate>
         ) -> Self {
         

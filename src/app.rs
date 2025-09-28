@@ -41,14 +41,12 @@ impl TodoApp {
             priority = Some(priority_value);
         }
 
-        let mut tags = None;
-        if let Some(tag_string) = tag_list {
-            tags = Some(tag_string
-                .split(',')
+        let tags = tag_list.map(|s| {
+            s.split(',')
                 .map(|s| s.trim().to_string())
                 .filter(|s| !s.is_empty())
-                .collect::<Vec<String>>());
-        }
+                .collect()
+        }).unwrap_or_default();
 
         let task = Task::new(self.next_id, description, priority, tags, due_date);
         self.tasks.push(task);
@@ -58,60 +56,70 @@ impl TodoApp {
         println!("Added task #{}: {}", self.next_id - 1, self.tasks.last().unwrap().description);
     }
 
-    pub fn edit_task(&mut self, id: u32, new_desc: Option<String>, priority_input: Option<Priority>, tag_list_replace: Option<String>, tag_list_add: Option<String>, due_date: Option<String>) {
-        match self.tasks.iter_mut().find(|task| task.id == id) {
+    pub fn edit_task(
+        &mut self,
+        id: u32,
+        new_desc: Option<String>,
+        priority_input: Option<Priority>,
+        tags_replace: Option<String>,
+        tags_add: Option<String>,
+        due_date: Option<String>,
+    ) {
+        match self.tasks.iter_mut().find(|t| t.id == id) {
             Some(task) => {
-                // perform updates while we have the mutable borrow and collect owned display values,
-                // then the borrow will end at the end of this inner block so we can call save_tasks().
-                let (desc_owned, due_owned, priority_owned, tags_owned) = {
-                    if let Some(description) = new_desc {
-                        task.description = description;
+                if let Some(desc) = new_desc {
+                    task.description = desc;
+                }
+    
+                if let Some(p) = priority_input {
+                    task.priority = Some(p);
+                }
+    
+                // Replace tags if provided. Empty string clears tags.
+                if let Some(tags_s) = tags_replace {
+                    let parsed: Vec<String> = tags_s
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    task.tags = parsed;
+                }
+    
+                // Append tags if provided
+                if let Some(add_s) = tags_add {
+                    let mut parsed_to_add: Vec<String> = add_s
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                    if !parsed_to_add.is_empty() {
+                        task.tags.extend(parsed_to_add.drain(..));
+                        // dedupe while preserving sorted order
+                        task.tags.sort();
+                        task.tags.dedup();
                     }
-
-                    if let Some(priority_value) = priority_input {
-                        task.priority = Some(priority_value);
-                    }
-
-                    // Replace tags if provided
-                    if let Some(tag_string) = tag_list_replace {
-                        let parsed: Vec<String> = tag_string
-                            .split(',')
-                            .map(|s| s.trim().to_string())
-                            .filter(|s| !s.is_empty())
-                            .collect();
-                        task.tags = if parsed.is_empty() { None } else { Some(parsed) };
-                    }
-
-                    // Append tags if provided
-                    if let Some(add_string) = tag_list_add {
-                        let parsed_to_add: Vec<String> = add_string
-                            .split(',')
-                            .map(|s| s.trim().to_string())
-                            .filter(|s| !s.is_empty())
-                            .collect();
-                        if !parsed_to_add.is_empty() {
-                            match &mut task.tags {
-                                Some(existing) => {
-                                    existing.extend(parsed_to_add.into_iter());
-                                    // optional: dedupe
-                                    existing.sort();
-                                    existing.dedup();
-                                }
-                                None => {
-                                    task.tags = Some(parsed_to_add);
-                                }
+                }
+    
+                // Parse due date if provided
+                if let Some(due_s) = due_date {
+                    if due_s.is_empty() {
+                        task.due_date = None;
+                    } else {
+                        match NaiveDate::parse_from_str(&due_s, "%Y-%m-%d") {
+                            Ok(d) => task.due_date = Some(d),
+                            Err(_) => {
+                                println!("Warning: invalid due date '{}'. Use YYYY-MM-DD.", due_s);
+                                return;
                             }
                         }
                     }
-
-                    if let Some(due) = due_date.and_then(|date_str| NaiveDate::parse_from_str(&date_str, "%Y-%m-%d").ok()) {
-                        task.due_date = Some(due);
-                    }
-
-                    // take owned copies for printing after we drop the mutable borrow
-                    let desc_owned = task.description.clone();
-                    let due_owned = task.due_date.map(|d| d.to_string());
-                    let priority_owned = match &task.priority {
+                }
+    
+                // Prepare display strings while we still hold the mutable borrow to `task`,
+                // then drop that borrow before calling save_tasks.
+                let (tags_display, priority_display, desc_clone, due_display) = {
+                    let tags_display = if task.tags.is_empty() { "No tags".to_string() } else { task.tags.join(", ") };
+                    let priority_display = match &task.priority {
                         Some(p) => match p {
                             Priority::High => "🔴 HIGH".to_string(),
                             Priority::Medium => "🟡 MED".to_string(),
@@ -119,19 +127,21 @@ impl TodoApp {
                         },
                         None => "None".to_string(),
                     };
-                    let tags_owned = task.tags.as_ref().map(|v| v.join(", ")).unwrap_or_else(|| "No tags".to_string());
-
-                    (desc_owned, due_owned, priority_owned, tags_owned)
-                }; // mutable borrow of `task` ends here
-
+                    let desc_clone = task.description.clone();
+                    let due_display = task.due_date.map_or("No due date".to_string(), |d| d.to_string());
+                    (tags_display, priority_display, desc_clone, due_display)
+                };
+    
+                // Persist changes (mutable borrow ended)
                 self.storage.save_tasks(&self.tasks);
-
-                println!("Edited task #{}: {}\n  Due: {}\n  Priority: {}\n  Tags: {}", 
-                    id, 
-                    desc_owned, 
-                    due_owned.unwrap_or_else(|| "No due date".to_string()),
-                    priority_owned,
-                    tags_owned
+    
+                println!(
+                    "Edited task #{}: {}\n  Due: {}\n  Priority: {}\n  Tags: {}",
+                    id,
+                    desc_clone,
+                    due_display,
+                    priority_display,
+                    tags_display
                 );
             }
             None => println!("Task #{} not found", id),
@@ -206,7 +216,7 @@ impl TodoApp {
 
             // format tags (unwrap Option<Vec<String>> into a human string)
             let tags_display = match &task.tags {
-                Some(tags) if !tags.is_empty() => tags.join(", "),
+                tags if !tags.is_empty() => tags.join(", "),
                 _ => "No tags".to_string(),
             };
 

@@ -98,6 +98,7 @@ pub enum Commands {
         #[arg(value_enum)]
         shell: Shell,
     },
+    Ui,
 }
 
 impl Cli {
