@@ -30,8 +30,8 @@ pub enum Commands {
     Add {
         /// Task description
         description: String,
-        /// Optional due date in YYYY-MM-DD format
-        
+
+        /// Optional
         #[arg(short,long, value_enum)]
         priority: Option<Priority>,
 
@@ -39,6 +39,7 @@ pub enum Commands {
         #[arg(short, long)]
         tags: Option<String>,
 
+        /// Optional due date in YYYY-MM-DD format
         #[arg(short, long)]
         due: Option<String>,
 
